@@ -1,6 +1,9 @@
+from flask import jsonify
+
 from app.articlesapi import bp
+from app.articlesapi.scrapers import TheFlowScraper
 
 
 @bp.route('/')
 def index():
-    return 'Hello from Flask!'
+    return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/features/kanye-west-gq'))
