@@ -7,4 +7,4 @@ from app.articlesapi.scrapers import TheFlowScraper
 @bp.route('/')
 def index():
     # return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/features/kanye-west-gq'))
-    return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/news/bionicle-action-rpg'))
+    return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/releases/mike-dean-4-20'))

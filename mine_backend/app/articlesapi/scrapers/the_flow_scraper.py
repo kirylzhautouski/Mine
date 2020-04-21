@@ -90,8 +90,10 @@ class TheFlowScraper:
         article = {
             'title': title.text,
             'description': description.text,
-            'imageSrc': 'https://the-flow.ru' + image.get('src'),
             'contentNodes': content_nodes,
         }
+
+        if image:
+            article['imageSrc'] = 'https://the-flow.ru' + image.get('src')
 
         return article
