@@ -38,7 +38,7 @@ class TheFlowScraper:
     @staticmethod
     def _scrap_video_iframe(tag):
         embed_video_src = tag['src']
-        video_id = embed_video_src.replace('https://www.youtube.com/embed/', '')
+        video_id = embed_video_src.replace('//www.youtube.com/embed/', '')
         return create_video_node(f'https://youtube.com/watch?v={video_id}')
 
     _TAG_SCRAPPERS = {
@@ -57,10 +57,10 @@ class TheFlowScraper:
         raise UnknownTagName(f'Unknown tag: {tag.name}')
 
     @staticmethod
-    def _scrap_content(content):
+    def _scrap_content(content_soup):
         nodes = []
 
-        for child in content.children:
+        for child in content_soup.children:
             node = None
 
             if isinstance(child, Tag):
@@ -76,24 +76,39 @@ class TheFlowScraper:
         return nodes
 
     @staticmethod
-    def scrap_article(link):
-        page = requests.get(link)
-        soup = BeautifulSoup(page.content, 'html.parser')
+    def _scrap_summary(article_soup):
+        title = article_soup.find('h1', class_='article__title')
+        description = article_soup.find('div', class_='article__descr')
+        image = article_soup.find('img', itemprop='contentUrl')
 
-        title = soup.find('h1', class_='article__title')
-        description = soup.find('div', class_='article__descr')
-        image = soup.find('img', itemprop='contentUrl')
-
-        content = soup.find('div', class_='article__text').find('p')
-        content_nodes = TheFlowScraper._scrap_content(content)
-
-        article = {
+        summary = {
             'title': title.text,
             'description': description.text,
-            'contentNodes': content_nodes,
         }
 
         if image:
-            article['imageSrc'] = 'https://the-flow.ru' + image.get('src')
+            summary['imageSrc'] = 'https://the-flow.ru' + image.get('src')
+
+        return summary
+
+    @staticmethod
+    def _build_soup(link):
+        page = requests.get(link)
+        return BeautifulSoup(page.content, 'html.parser')
+
+    @staticmethod
+    def scrap_article(link):
+        soup = TheFlowScraper._build_soup(link)
+
+        article = {}
+        article.update(TheFlowScraper._scrap_summary(soup))
+
+        content = soup.find('div', class_='article__text').find('p')
+        article['contentNodes'] = TheFlowScraper._scrap_content(content)
 
         return article
+
+    @staticmethod
+    def get_article_summary(link):
+        soup = TheFlowScraper._build_soup(link)
+        return TheFlowScraper._scrap_summary(soup)
