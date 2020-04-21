@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
 from app.articlesapi.scrapers.exceptions import UnknownChildType, UnknownTagName
-from app.articlesapi.scrapers.nodes import Nodes
+from app.articlesapi.scrapers.nodes import create_image_node, create_text_node, create_video_node
 
 
 class TheFlowScraper:
@@ -23,13 +23,13 @@ class TheFlowScraper:
             except StopIteration:
                 caption = None
 
-            return Nodes.create_image_node('https://the-flow.ru' + image['src'], caption)
+            return create_image_node('https://the-flow.ru' + image['src'], caption)
         else:
             return None
 
     @staticmethod
     def _scrap_em(tag):
-        return Nodes.create_text_node(tag.text.strip())
+        return create_text_node(tag.text.strip())
 
     @staticmethod
     def _scrap_br(tag):
@@ -39,7 +39,7 @@ class TheFlowScraper:
     def _scrap_video_iframe(tag):
         embed_video_src = tag['src']
         video_id = embed_video_src.replace('https://www.youtube.com/embed/', '')
-        return Nodes.create_video_node(f'https://youtube.com/watch?v={video_id}')
+        return create_video_node(f'https://youtube.com/watch?v={video_id}')
 
     _TAG_SCRAPPERS = {
         'em': _scrap_image_div.__func__,
@@ -66,7 +66,7 @@ class TheFlowScraper:
             if isinstance(child, Tag):
                 node = TheFlowScraper._scrap_tag(child)
             elif isinstance(child, NavigableString):
-                node = Nodes.create_text_node(str(child).strip())
+                node = create_text_node(str(child).strip())
             else:
                 raise UnknownChildType(f'Unknown child: {child}')
 
