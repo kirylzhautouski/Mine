@@ -1,3 +1,5 @@
+import os
+
 
 class Config:
-    pass
+    MONGO_URI = os.getenv('MONGO_URI')
