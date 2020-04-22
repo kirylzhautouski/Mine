@@ -1,17 +1,14 @@
-import json
-
 from flask import jsonify, request, abort, Response
+from flask_pymongo import ObjectId
 
-from app import app
+from app import app, mongo
 from app.articlesapi import bp
 from app.articlesapi.scrapers import TheFlowScraper
-from app.articlesapi.scrapers.article import ArticleJSONEncoder
 
 
 @bp.route('/')
 def index():
-    return Response(json.dumps(TheFlowScraper.scrap_article('https://the-flow.ru/features/kanye-west-gq'),
-                               cls=ArticleJSONEncoder), mimetype=app.config["JSONIFY_MIMETYPE"])
+    return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/features/kanye-west-gq').to_dict())
 
 
 @bp.route('/summary/')
@@ -23,17 +20,42 @@ def summary():
         abort(400, 'You should provide link query parameter')
 
 
-@bp.route('/article/<id>', methods=['POST'])
-def save_article(id):
+@bp.route('/articles/', methods=['POST'])
+def save_article():
+    link = request.json.get('link')
+    if link:
+        result = mongo.db.saved_articles.insert_one(TheFlowScraper
+                                                    .scrap_article(link)
+                                                    .to_dict())
+        return jsonify({
+            'insertedId': str(result.inserted_id),
+        })
+    else:
+        return abort(400, 'You should provide a link parameter in body.')
+
+
+@bp.route('/articles/', methods=['GET'])
+def get_articles():
+    articles = list(mongo.db.saved_articles.find())
+
+    for article in articles:
+        article['_id'] = str(article['_id'])
+
     return jsonify({
-        'id': id,
-        'method': 'POST',
+        'articles': articles,
     })
 
 
-@bp.route('/article/<id>', methods=['GET'])
+@bp.route('/articles/<id>', methods=['GET'])
 def get_article(id):
-    return jsonify({
-        'id': id,
-        'method': 'GET',
-    })
+    article = mongo.db.saved_articles.find_one_or_404(ObjectId(id))
+    article['_id'] = str(article['_id'])
+
+    return jsonify(article)
+
+
+@bp.route('/articles/<id>', methods=['DELETE'])
+def delete_article(id):
+    mongo.db.saved_articles.delete_one({'_id': ObjectId(id)})
+
+    return Response(status=204)

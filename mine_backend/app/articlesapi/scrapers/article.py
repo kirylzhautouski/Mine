@@ -5,12 +5,21 @@ from typing import List, Optional
 
 
 class Node(abc.ABC):
-    pass
+
+    def to_dict(self):
+        return {
+            '@type': self.__class__.__name__,
+        }
 
 
 @dataclass(frozen=True)
 class TextNode(Node):
     text: str
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['text'] = self.text
+        return result
 
 
 @dataclass(frozen=True)
@@ -18,10 +27,23 @@ class ImageNode(Node):
     src: str
     caption: Optional[str] = None
 
+    def to_dict(self):
+        result = super().to_dict()
+        result.update({
+            'src': self.src,
+            'caption': self.caption,
+        })
+        return result
+
 
 @dataclass(frozen=True)
 class VideoNode(Node):
     src: str
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['src'] = self.src
+        return result
 
 
 @dataclass(frozen=True)
@@ -31,6 +53,15 @@ class Article:
     image_src: Optional[str]
 
     content_nodes: List[Node]
+
+    def to_dict(self):
+        result = {
+                'title': self.title,
+                'description': self.description,
+                'imageSrc': self.image_src,
+        }
+        result['contentNodes'] = list(map(lambda x: x.to_dict(), self.content_nodes))
+        return result
 
 
 class ArticleJSONEncoder(json.JSONEncoder):

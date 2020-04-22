@@ -5,6 +5,11 @@ services:
         image: postgres
         environment: 
             POSTGRES_HOST_AUTH_METHOD: 'trust'
+    mongo:
+        image: mongo
+        ports:
+            - '27017:27017'
+        command: mongod --port 27017
     web:
         build: .
         command: flask run --host=0.0.0.0
