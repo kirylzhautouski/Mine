@@ -1,13 +1,17 @@
-from flask import jsonify, request, abort
+import json
 
+from flask import jsonify, request, abort, Response
+
+from app import app
 from app.articlesapi import bp
 from app.articlesapi.scrapers import TheFlowScraper
+from app.articlesapi.scrapers.article import ArticleJSONEncoder
 
 
 @bp.route('/')
 def index():
-    return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/features/kanye-west-gq'))
-    # return jsonify(TheFlowScraper.scrap_article('https://the-flow.ru/releases/mike-dean-4-20'))
+    return Response(json.dumps(TheFlowScraper.scrap_article('https://the-flow.ru/features/kanye-west-gq'),
+                               cls=ArticleJSONEncoder), mimetype=app.config["JSONIFY_MIMETYPE"])
 
 
 @bp.route('/summary/')

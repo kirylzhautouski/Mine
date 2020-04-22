@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
 from app.articlesapi.scrapers.exceptions import UnknownChildType, UnknownTagName
-from app.articlesapi.scrapers.nodes import create_image_node, create_text_node, create_video_node
+from app.articlesapi.scrapers.article import Article, TextNode, ImageNode, VideoNode
 
 
 class TheFlowScraper:
@@ -23,13 +23,17 @@ class TheFlowScraper:
             except StopIteration:
                 caption = None
 
-            return create_image_node('https://the-flow.ru' + image['src'], caption)
+            return ImageNode('https://the-flow.ru' + image['src'], caption)
         else:
             return None
 
     @staticmethod
     def _scrap_em(tag):
-        return create_text_node(tag.text.strip())
+        text = tag.text.strip()
+        if text:
+            return TextNode(text)
+        else:
+            return None
 
     @staticmethod
     def _scrap_br(tag):
@@ -39,7 +43,7 @@ class TheFlowScraper:
     def _scrap_video_iframe(tag):
         embed_video_src = tag['src']
         video_id = embed_video_src.replace('//www.youtube.com/embed/', '')
-        return create_video_node(f'https://youtube.com/watch?v={video_id}')
+        return VideoNode(f'https://youtube.com/watch?v={video_id}')
 
     _TAG_SCRAPPERS = {
         'em': _scrap_image_div.__func__,
@@ -66,7 +70,9 @@ class TheFlowScraper:
             if isinstance(child, Tag):
                 node = TheFlowScraper._scrap_tag(child)
             elif isinstance(child, NavigableString):
-                node = create_text_node(str(child).strip())
+                text = str(child).strip()
+                if text:
+                    node = TextNode(text)
             else:
                 raise UnknownChildType(f'Unknown child: {child}')
 
@@ -88,6 +94,8 @@ class TheFlowScraper:
 
         if image:
             summary['imageSrc'] = 'https://the-flow.ru' + image.get('src')
+        else:
+            summary['imageSrc'] = None
 
         return summary
 
@@ -104,9 +112,9 @@ class TheFlowScraper:
         article.update(TheFlowScraper._scrap_summary(soup))
 
         content = soup.find('div', class_='article__text').find('p')
-        article['contentNodes'] = TheFlowScraper._scrap_content(content)
+        content_nodes = TheFlowScraper._scrap_content(content)
 
-        return article
+        return Article(article['title'], article['description'], article['imageSrc'], content_nodes)
 
     @staticmethod
     def get_article_summary(link):
