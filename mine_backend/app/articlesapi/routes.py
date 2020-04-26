@@ -5,6 +5,7 @@ from flask_pymongo import ObjectId
 from app import app, mongo
 from app.articlesapi import bp
 from app.articlesapi.scrapers import TheFlowScraper
+from app.request_params import get_int_arg
 
 
 @bp.route('/')
@@ -37,7 +38,10 @@ def save_article():
 
 @bp.route('/articles/', methods=['GET'])
 def get_articles():
-    articles = list(mongo.db.saved_articles.find())
+    limit = get_int_arg(request, 'limit', 20)
+    offset = get_int_arg(request, 'offset', 0)
+
+    articles = list(mongo.db.saved_articles.find(skip=offset, limit=limit))
 
     for article in articles:
         article['_id'] = str(article['_id'])
