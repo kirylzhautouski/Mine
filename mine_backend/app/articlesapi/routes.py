@@ -1,3 +1,4 @@
+from bson.errors import InvalidId
 from flask import jsonify, request, abort, Response
 from flask_pymongo import ObjectId
 
@@ -29,7 +30,7 @@ def save_article():
                                                     .to_dict())
         return jsonify({
             'insertedId': str(result.inserted_id),
-        })
+        }), 201
     else:
         return abort(400, 'You should provide a link parameter in body.')
 
@@ -46,7 +47,7 @@ def get_articles():
     })
 
 
-@bp.route('/articles/<id>', methods=['GET'])
+@bp.route('/articles/<id>/', methods=['GET'])
 def get_article(id):
     article = mongo.db.saved_articles.find_one_or_404(ObjectId(id))
     article['_id'] = str(article['_id'])
@@ -54,8 +55,12 @@ def get_article(id):
     return jsonify(article)
 
 
-@bp.route('/articles/<id>', methods=['DELETE'])
+@bp.route('/articles/<id>/', methods=['DELETE'])
 def delete_article(id):
-    mongo.db.saved_articles.delete_one({'_id': ObjectId(id)})
-
-    return Response(status=204)
+    try:
+        mongo.db.saved_articles.delete_one({'_id': ObjectId(id)})
+        return Response(status=204)
+    except InvalidId as ex:
+        return jsonify({
+            'errorMessage': str(ex),
+        }), 400
