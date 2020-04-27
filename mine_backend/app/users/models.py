@@ -33,21 +33,14 @@ class User:
 
     @staticmethod
     def validate_email(email):
-        if not email:
-            raise ValidationError('Email should not be empty.')
-
         if mongo.db.users.find_one({'email': email}):
             raise ValidationError('Email already exists.')
 
     @staticmethod
     def validate_login(login):
-        if not login:
-            raise ValidationError('Login should not be empty.')
-
         if mongo.db.users.find_one({'login': login}):
             raise ValidationError('Login already exists.')
 
     @staticmethod
     def validate_password(password):
-        if not password:
-            raise ValidationError('Password should not be empty.')
+        pass
