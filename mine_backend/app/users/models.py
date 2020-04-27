@@ -1,6 +1,7 @@
 from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_pymongo import ObjectId
 
-from app import mongo, bcrypt
+from app import mongo, bcrypt, jwt
 
 
 class PasswordNotSetError(Exception):
@@ -56,6 +57,18 @@ class User:
 
         self.id = str(result.inserted_id)
 
+    def generate_tokens(self):
+        if not self.id:
+            raise UserNotSavedError('You should save() user before generating tokens.')
+
+        access_token = create_access_token(identity=self.id, fresh=True)
+        refresh_token = create_refresh_token(self.id)
+
+        return {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        }
+
     @classmethod
     def get_user_by_login(cls, login):
         result = mongo.db.users.find_one({'login': login})
@@ -68,17 +81,17 @@ class User:
 
         return None
 
-    def generate_tokens(self):
-        if not self.id:
-            raise UserNotSavedError('You should save() user before generating tokens.')
+    @classmethod
+    def get_user_by_id(cls, id):
+        result = mongo.db.users.find_one(ObjectId(id))
+        if result:
+            user = cls(result['email'], result['login'])
+            user.id = str(result['_id'])
+            user.set_password(result['hashed_password'], hashed=True)
 
-        access_token = create_access_token(identity=self.id, fresh=True)
-        refresh_token = create_refresh_token(self.id)
+            return user
 
-        return {
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-        }
+        return None
 
     @staticmethod
     def validate_email(email):
@@ -93,3 +106,8 @@ class User:
     @staticmethod
     def validate_password(password):
         pass
+
+
+@jwt.user_loader_callback_loader
+def retrieve_user(identity):
+    return User.get_user_by_id(identity)

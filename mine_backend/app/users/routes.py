@@ -1,9 +1,20 @@
 from flask import request, jsonify, abort
-from flask_jwt_extended import jwt_refresh_token_required, get_jwt_identity, create_access_token
+from flask_jwt_extended import (
+    jwt_refresh_token_required, get_jwt_identity, create_access_token,
+    jwt_required, current_user
+)
 
 from app.request_params import get_str_param
 from app.users import bp
 from app.users.models import User, ValidationError
+
+
+@bp.route('/', methods=['GET'])
+@jwt_required
+def index():
+    return jsonify({
+        'current_user': current_user.__dict__,
+    }), 200
 
 
 @bp.route('/register/', methods=['POST'])
