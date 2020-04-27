@@ -1,5 +1,4 @@
 from flask import request, jsonify, abort
-from flask_jwt_extended import create_access_token, create_refresh_token
 
 from app.request_params import get_str_param
 from app.users import bp
@@ -13,20 +12,22 @@ def register():
     password = get_str_param(request, 'password')
 
     try:
-        new_user = User(email, login, password)
+        new_user = User(email, login)
+        new_user.set_password(password)
         new_user.save()
 
-        access_token = create_access_token(identity=new_user.id, fresh=True)
-        refresh_token = create_refresh_token(new_user.id)
-
-        return jsonify({
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-        }), 201
+        return jsonify(new_user.generate_tokens()), 201
     except ValidationError as ex:
         return abort(400, str(ex))
 
 
 @bp.route('/login/', methods=['POST'])
 def login():
-    pass
+    login = get_str_param(request, 'login')
+    password = get_str_param(request, 'password')
+
+    user = User.get_user_by_login(login)
+    if user and user.check_password(password):
+        return jsonify(user.generate_tokens()), 200
+
+    return abort(401, 'Invalid credentials!')
