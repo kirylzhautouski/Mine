@@ -3,3 +3,5 @@ flake8==3.7.9
 requests==2.23.0
 beautifulsoup4==4.9.0
 Flask-PyMongo==2.3.0
+Flask-Bcrypt==0.7.1
+Flask-JWT-Extended==3.24.1
