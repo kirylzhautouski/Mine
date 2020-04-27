@@ -1,4 +1,5 @@
 from flask import request, jsonify, abort
+from flask_jwt_extended import jwt_refresh_token_required, get_jwt_identity, create_access_token
 
 from app.request_params import get_str_param
 from app.users import bp
@@ -31,3 +32,13 @@ def login():
         return jsonify(user.generate_tokens()), 200
 
     return abort(401, 'Invalid credentials!')
+
+
+@bp.route('/refresh-token/', methods=['POST'])
+@jwt_refresh_token_required
+def refresh_access_token():
+    user_id = get_jwt_identity()
+    access_token = create_access_token(identity=user_id, fresh=False)
+    return jsonify({
+        'access_token': access_token
+    }), 200
