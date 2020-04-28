@@ -1,3 +1,5 @@
+import datetime
+
 from flask_jwt_extended import create_access_token, create_refresh_token
 from flask_pymongo import ObjectId
 
@@ -19,7 +21,7 @@ class ValidationError(Exception):
 class User:
 
     def __init__(self, email, login, is_active=True):
-        self.id = None
+        self._object_id = None
 
         self.email = email
         self.login = login
@@ -27,6 +29,20 @@ class User:
         self.hashed_password = None
 
         self.is_active = is_active
+
+    @property
+    def id(self):
+        if self._object_id is None:
+            return None
+
+        return str(self._object_id)
+
+    @property
+    def object_id(self):
+        if self._object_id is None:
+            return None
+
+        return self._object_id
 
     def set_password(self, password, hashed=False):
         if not hashed:
@@ -55,13 +71,13 @@ class User:
             'is_active': self.is_active,
         })
 
-        self.id = str(result.inserted_id)
+        self._object_id = result.inserted_id
 
     def generate_tokens(self):
         if not self.id:
             raise UserNotSavedError('You should save() user before generating tokens.')
 
-        access_token = create_access_token(identity=self.id, fresh=True)
+        access_token = create_access_token(identity=self.id, fresh=True, expires_delta=datetime.timedelta(days=31))
         refresh_token = create_refresh_token(self.id)
 
         return {
@@ -74,7 +90,7 @@ class User:
         result = mongo.db.users.find_one({'login': login})
         if result:
             user = cls(result['email'], result['login'])
-            user.id = str(result['_id'])
+            user._object_id = result['_id']
             user.set_password(result['hashed_password'], hashed=True)
 
             return user
@@ -86,7 +102,7 @@ class User:
         result = mongo.db.users.find_one(ObjectId(id))
         if result:
             user = cls(result['email'], result['login'])
-            user.id = str(result['_id'])
+            user._object_id = result['_id']
             user.set_password(result['hashed_password'], hashed=True)
 
             return user
